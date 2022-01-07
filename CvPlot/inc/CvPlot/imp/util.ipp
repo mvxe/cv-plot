@@ -213,7 +213,7 @@ void paint(const cv::Mat3b &src, cv::Mat3b &dst, const cv::Rect2d &pos, int inte
     double dxI = -kxI*pos.x;
     double ky = pos.height / (double)src.rows; //pixel height
     double dy = pos.y;
-    double kyI = 1 / ky; 
+    double kyI = 1 / ky;
     double dyI = -kyI*pos.y;
     cv::Rect2d rDstVis = pos & cv::Rect2d(rDst);
     cv::Rect2d rSrcVis = cv::Rect2d(rDstVis.x*kxI + dxI, rDstVis.y*kyI + dyI, rDstVis.width*kxI, rDstVis.height*kyI);

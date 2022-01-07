@@ -41,7 +41,7 @@ cv::Mat3b toMat3b(const cv::Mat& mat, int code) {
 }
 
 CVPLOT_DEFINE_FUN
-cv::Mat3b toBgr(const cv::Mat& mat, cv::Scalar nanColor) {
+cv::Mat3b toBgr(const cv::Mat& mat, cv::Scalar nanColor, int colormap = -1) {
     switch (mat.type()) {
     case CV_8UC3:
         return mat;
@@ -50,17 +50,35 @@ cv::Mat3b toBgr(const cv::Mat& mat, cv::Scalar nanColor) {
     case CV_16S:
     case CV_16U:
     case CV_32S:
-        return toMat3b(toMat1b(mat), cv::COLOR_GRAY2BGR);
+        if (colormap >= 0) {
+            cv::Mat mat3b;
+            cv::applyColorMap(toMat1b(mat), mat3b, colormap);
+            return toMat3b(mat3b, cv::COLOR_RGB2BGR);
+        }else {
+            return toMat3b(toMat1b(mat), cv::COLOR_GRAY2BGR);
+        }
     case CV_32F:
     case CV_64F: {
-        auto mat3b = toMat3b(toMat1b(mat), cv::COLOR_GRAY2BGR);
+        cv::Mat mat3b;
+        if (colormap >= 0) {
+            cv::applyColorMap(toMat1b(mat), mat3b, colormap);
+            mat3b = toMat3b(mat3b, cv::COLOR_RGB2BGR);
+        }else {
+            mat3b = toMat3b(toMat1b(mat), cv::COLOR_GRAY2BGR);
+        }
         if (nanColor != cv::Scalar()) {
             mat3b.setTo(nanColor, mat != mat);
         }
         return mat3b;
     }
     case CV_8UC1:
-        return toMat3b(mat, cv::COLOR_GRAY2BGR);
+        if (colormap >= 0) {
+            cv::Mat mat3b;
+            cv::applyColorMap(mat, mat3b, colormap);
+            return toMat3b(mat3b, cv::COLOR_RGB2BGR);
+        }else {
+            return toMat3b(mat, cv::COLOR_GRAY2BGR);
+        }
     default:
         throw std::runtime_error("Image: mat type not supported");
     }
@@ -76,6 +94,7 @@ public:
     bool _autoPosition = true;
     int _interpolation = cv::INTER_AREA;
     cv::Scalar _nanColor;
+    int _colormap = -1;
 
     cv::Mat _flippedMat;
     cv::Mat3b _flippedBgr;
@@ -111,7 +130,7 @@ public:
         auto tl = renderTarget.project(cv::Point2d(_position.x, _position.y));
         auto br = renderTarget.project(cv::Point2d(_position.x + _position.width, _position.y + _position.height));
         cv::Rect2d matRectDst(tl, br);
-        
+
         bool flipVert = tl.y > br.y;
         bool flipHorz = tl.x > br.x;
         if (flipHorz != _flipHorz || flipVert != _flipVert) {
@@ -147,7 +166,7 @@ Image::~Image() {
 CVPLOT_DEFINE_FUN
 Image& Image::setMat(const cv::Mat & mat){
     impl->_mat = mat;
-    impl->_matBgr = Imp::toBgr(impl->_mat, impl->_nanColor); //ref-copy when bgr, clone otherwise
+    impl->_matBgr = Imp::toBgr(impl->_mat, impl->_nanColor, impl->_colormap);   //ref-copy when bgr, clone otherwise
     impl->updateFlipped();
     impl->updateAutoPosition();
     return *this;
@@ -206,6 +225,21 @@ Image& Image::setNanColor(cv::Scalar nanColor){
 CVPLOT_DEFINE_FUN
 cv::Scalar Image::getNanColor()const{
     return impl->_nanColor;
+}
+
+CVPLOT_DEFINE_FUN
+Image& Image::setColormap(int colormap){
+    if(colormap==impl->_colormap){
+        return *this;
+    }
+    impl->_colormap = colormap;
+    setMat(impl->_mat);
+    return *this;
+}
+
+CVPLOT_DEFINE_FUN
+int Image::getColormap()const{
+    return impl->_colormap;
 }
 
 CVPLOT_DEFINE_FUN
