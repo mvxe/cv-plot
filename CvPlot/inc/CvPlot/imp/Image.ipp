@@ -125,7 +125,6 @@ public:
             return;
         }
         cv::Mat3b& innerMat = renderTarget.innerMat();
-        cv::Rect innerRect(0, 0, innerMat.cols, innerMat.rows);
 
         auto tl = renderTarget.project(cv::Point2d(_position.x, _position.y));
         auto br = renderTarget.project(cv::Point2d(_position.x + _position.width, _position.y + _position.height));
