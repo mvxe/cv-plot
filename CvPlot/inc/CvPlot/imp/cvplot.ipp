@@ -25,3 +25,4 @@
 #include <CvPlot/imp/XLabel.ipp>
 #include <CvPlot/imp/YAxis.ipp>
 #include <CvPlot/imp/YLabel.ipp>
+#include <CvPlot/imp/CBox.ipp>

@@ -71,6 +71,7 @@ target_sources(${target} ${public_or_interface}
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/CvPlot/imp/XLabel.ipp
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/CvPlot/imp/YAxis.ipp
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/CvPlot/imp/YLabel.ipp
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/CvPlot/imp/CBox.ipp
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/CvPlot/Internal/LinearProjection.h
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/CvPlot/Internal/no_warning.h
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/CvPlot/Internal/Pimpl.h

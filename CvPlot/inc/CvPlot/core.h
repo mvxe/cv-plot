@@ -11,6 +11,7 @@
 #include <CvPlot/drawables/Border.h>
 #include <CvPlot/drawables/XAxis.h>
 #include <CvPlot/drawables/YAxis.h>
+#include <CvPlot/drawables/CBox.h>
 #include <CvPlot/drawables/Title.h>
 #include <CvPlot/drawables/HorizontalGrid.h>
 #include <CvPlot/drawables/VerticalGrid.h>
