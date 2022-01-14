@@ -30,6 +30,7 @@ public:
     int getColormap()const;
     void render(RenderTarget &renderTarget)override;
     bool getBoundingRect(cv::Rect2d &rect)override;
+    Image& setMinMaxOverride(double override_min = NAN, double override_max = NAN);
 private:
     class Impl;
     CVPLOT_NO_WARNING_DLL_INTERFACE(Internal::Pimpl<Impl>, impl);

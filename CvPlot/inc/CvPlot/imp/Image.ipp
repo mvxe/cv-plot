@@ -12,12 +12,16 @@ namespace CvPlot {
 namespace Imp{
 
 CVPLOT_DEFINE_FUN
-cv::Mat1b toMat1b(const cv::Mat& mat) {
+cv::Mat1b toMat1b(const cv::Mat& mat, double override_min = NAN, double override_max = NAN) {
     bool floating = mat.depth() == CV_32F || mat.depth() == CV_64F;
     cv::Mat mask = floating ? (mat == mat) : cv::Mat();
     double minVal, maxVal;
-    cv::minMaxLoc(mat, &minVal, &maxVal, nullptr, nullptr, mask);
-    if (std::isinf(minVal) || std::isinf(maxVal)) {
+    if (std::isnan(override_min) || std::isnan(override_max) ){
+        cv::minMaxLoc(mat, &minVal, &maxVal, nullptr, nullptr, mask);
+    }
+    if (!std::isnan(override_min) ) minVal = override_min;
+    if (!std::isnan(override_max) ) maxVal = override_max;
+    if(std::isinf(minVal) || std::isinf(maxVal)) {
         uint8_t finiteVal = std::isfinite(minVal) ? 0 : std::isfinite(maxVal) ? 255 : 127;
         cv::Mat1b mat1b(mat.size(), finiteVal);
         mat1b.setTo(0, mat == minVal);
@@ -41,7 +45,7 @@ cv::Mat3b toMat3b(const cv::Mat& mat, int code) {
 }
 
 CVPLOT_DEFINE_FUN
-cv::Mat3b toBgr(const cv::Mat& mat, cv::Scalar nanColor, int colormap = -1) {
+cv::Mat3b toBgr(const cv::Mat& mat, cv::Scalar nanColor, int colormap = -1, double override_min = NAN, double override_max = NAN) {
     switch (mat.type()) {
     case CV_8UC3:
         return mat;
@@ -49,25 +53,38 @@ cv::Mat3b toBgr(const cv::Mat& mat, cv::Scalar nanColor, int colormap = -1) {
         return toMat3b(mat, cv::COLOR_BGRA2BGR);
     case CV_16S:
     case CV_16U:
-    case CV_32S:
+    case CV_32S:{
+        cv::Mat mat3b;
         if (colormap >= 0) {
             cv::Mat mat3b;
-            cv::applyColorMap(toMat1b(mat), mat3b, colormap);
-            return toMat3b(mat3b, cv::COLOR_RGB2BGR);
+            cv::applyColorMap(toMat1b(mat, override_min ,override_max), mat3b, colormap);
+            mat3b = toMat3b(mat3b, cv::COLOR_RGB2BGR);
         }else {
-            return toMat3b(toMat1b(mat), cv::COLOR_GRAY2BGR);
+            mat3b = toMat3b(toMat1b(mat, override_min ,override_max), cv::COLOR_GRAY2BGR);
         }
+        if (!std::isnan(override_min)){
+            mat3b.setTo(nanColor, mat < override_min);
+        }
+        if (!std::isnan(override_max)){
+            mat3b.setTo(nanColor, mat > override_max);
+        }
+        return mat3b;
+    }
     case CV_32F:
     case CV_64F: {
         cv::Mat mat3b;
         if (colormap >= 0) {
-            cv::applyColorMap(toMat1b(mat), mat3b, colormap);
+            cv::applyColorMap(toMat1b(mat, override_min ,override_max), mat3b, colormap);
             mat3b = toMat3b(mat3b, cv::COLOR_RGB2BGR);
         }else {
-            mat3b = toMat3b(toMat1b(mat), cv::COLOR_GRAY2BGR);
+            mat3b = toMat3b(toMat1b(mat, override_min ,override_max), cv::COLOR_GRAY2BGR);
         }
-        if (nanColor != cv::Scalar()) {
-            mat3b.setTo(nanColor, mat != mat);
+        mat3b.setTo(nanColor, mat != mat);
+        if (!std::isnan(override_min)){
+            mat3b.setTo(nanColor, mat < override_min);
+        }
+        if (!std::isnan(override_max)){
+            mat3b.setTo(nanColor, mat > override_max);
         }
         return mat3b;
     }
@@ -93,13 +110,15 @@ public:
     cv::Rect2d _position;
     bool _autoPosition = true;
     int _interpolation = cv::INTER_AREA;
-    cv::Scalar _nanColor;
+    cv::Scalar _nanColor = cv::Scalar::all(255);
     int _colormap = -1;
 
     cv::Mat _flippedMat;
     cv::Mat3b _flippedBgr;
     bool _flipVert = false;
     bool _flipHorz = false;
+    double _override_min = NAN;
+    double _override_max = NAN;
 
     void updateFlipped() {
         if (_mat.empty()) {
@@ -165,7 +184,7 @@ Image::~Image() {
 CVPLOT_DEFINE_FUN
 Image& Image::setMat(const cv::Mat & mat){
     impl->_mat = mat;
-    impl->_matBgr = Imp::toBgr(impl->_mat, impl->_nanColor, impl->_colormap);   //ref-copy when bgr, clone otherwise
+    impl->_matBgr = Imp::toBgr(impl->_mat, impl->_nanColor, impl->_colormap, impl->_override_min, impl->_override_max);   //ref-copy when bgr, clone otherwise
     impl->updateFlipped();
     impl->updateAutoPosition();
     return *this;
@@ -254,4 +273,16 @@ bool Image::getBoundingRect(cv::Rect2d &rect) {
     rect = impl->_position;
     return true;
 }
+
+CVPLOT_DEFINE_FUN
+Image& Image::setMinMaxOverride(double override_min, double override_max){
+    if(impl->_override_min==override_min && impl->_override_max==override_max){
+        return *this;
+    }
+    impl->_override_min = override_min;
+    impl->_override_max = override_max;
+    setMat(impl->_mat);
+    return *this;
+}
+
 }
