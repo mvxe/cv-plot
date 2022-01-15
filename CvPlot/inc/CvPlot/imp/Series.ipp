@@ -17,6 +17,7 @@ public:
     }
     Series &_parent;
     std::vector<double> _x,_internalX,_y;
+    std::vector<double> _xErr, _yErr;
     MarkerType _markerType = MarkerType::None;
     int _markerSize = 10;
     cv::Rect2d _boundingRect;
@@ -44,6 +45,12 @@ public:
                 return;
             }
             _internalX = _x;
+            if (_xErr.size() != _x.size()) {
+                _xErr.clear();
+            }
+            if (_yErr.size() != _x.size()) {
+                _yErr.clear();
+            }
         }
         double minx, maxx, miny, maxy;
         cv::minMaxIdx(_internalX, &minx, &maxx);
@@ -109,6 +116,38 @@ public:
                 const auto p = (cv::Point)points[i];
                 if (p.x >= 0 && p.x < mat.cols && p.y >= 0 && p.y < mat.rows) {
                     mat(p.y, p.x) = colorv3;
+                }
+            }
+        }
+        if (!_xErr.empty()) {
+            cv::Point2d h_pt, l_pt;
+            const int llen = (_markerSize * shiftScale) / 2;
+            for (size_t i = 0; i < _internalX.size(); i++) {
+                l_pt = renderTarget.project(cv::Point2d(_internalX[i]-_xErr[i], _y[i]));
+                h_pt = renderTarget.project(cv::Point2d(_internalX[i]+_xErr[i], _y[i]));
+                if(std::isfinite(l_pt.x) && std::isfinite(l_pt.y)) {
+                    for (auto* pt: {&l_pt, &h_pt}) {
+                        pt->x = Internal::drawCast(pt->x * shiftScale);
+                        pt->y = Internal::drawCast(pt->y * shiftScale);
+                        cv::line(mat, cv::Point2d(pt->x, pt->y - llen), cv::Point2d(pt->x, pt->y + llen), color, lineWidth, cv::LINE_AA, shift);
+                    }
+                    cv::line(mat, l_pt, h_pt, color, lineWidth, cv::LINE_AA, shift);
+                }
+            }
+        }
+        if (!_yErr.empty()) {
+            cv::Point2d h_pt, l_pt;
+            const int llen = (_markerSize * shiftScale) / 2;
+            for (size_t i = 0; i < _internalX.size(); i++) {
+                l_pt = renderTarget.project(cv::Point2d(_internalX[i], _y[i]-_yErr[i]));
+                h_pt = renderTarget.project(cv::Point2d(_internalX[i], _y[i]+_yErr[i]));
+                if(std::isfinite(l_pt.x) && std::isfinite(l_pt.y)) {
+                    for (auto* pt: {&l_pt, &h_pt}) {
+                        pt->x = Internal::drawCast(pt->x * shiftScale);
+                        pt->y = Internal::drawCast(pt->y * shiftScale);
+                        cv::line(mat, cv::Point2d(pt->x - llen, pt->y), cv::Point2d(pt->x + llen, pt->y), color, lineWidth, cv::LINE_AA, shift);
+                    }
+                    cv::line(mat, l_pt, h_pt, color, lineWidth, cv::LINE_AA, shift);
                 }
             }
         }
@@ -266,6 +305,36 @@ Series & Series::setPoints(cv::InputArray points){
 CVPLOT_DEFINE_FUN
 std::vector<cv::Point2d> Series::getPoints(){
     return impl->getPoints();
+}
+
+CVPLOT_DEFINE_FUN
+Series& Series::setXErr(cv::InputArray xErr){
+    if (!impl->xyValid(xErr)) {
+        throw std::invalid_argument("invalid xErr in Series::setXErr(). See Series.h for supported types");
+    }
+    impl->_xErr = Internal::toVector<double>(xErr);
+    impl->update();
+    return *this;
+}
+
+CVPLOT_DEFINE_FUN
+std::vector<double> Series::getXErr(){
+    return impl->_xErr;
+}
+
+CVPLOT_DEFINE_FUN
+Series& Series::setYErr(cv::InputArray yErr){
+    if (!impl->xyValid(yErr)) {
+        throw std::invalid_argument("invalid yErr in Series::setYErr(). See Series.h for supported types");
+    }
+    impl->_yErr = Internal::toVector<double>(yErr);
+    impl->update();
+    return *this;
+}
+
+CVPLOT_DEFINE_FUN
+std::vector<double> Series::getYErr(){
+    return impl->_yErr;
 }
 
 }

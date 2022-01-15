@@ -43,6 +43,14 @@ public:
     // - cv::Mat 1-channel (2xN)
     Series& setPoints(cv::InputArray points);
     std::vector<cv::Point2d> getPoints();
+
+    //xErr: see setX()
+    Series& setXErr(cv::InputArray xErr);
+    std::vector<double> getXErr();
+
+    //yErr: see setX()
+    Series& setYErr(cv::InputArray yErr);
+    std::vector<double> getYErr();
     
     Series& setLineSpec(const std::string &lineSpec);
     Series& setMarkerType(MarkerType markerType);
